@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { asyncHandler, HttpError } from '../utils/http.js';
+import { moneyField } from '../utils/money.js';
 
 const router = Router();
 
@@ -13,9 +14,9 @@ const productSchema = z.object({
   description: z.preprocess(emptyToNull, z.string().nullable().optional()),
   imageUrl: z.preprocess(emptyToNull, z.string().nullable().optional()),
   category: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
-  quantity: z.coerce.number().int().min(0).default(0),
-  importPrice: z.coerce.number().int().min(0).default(0),
-  salePrice: z.coerce.number().int().min(0).default(0),
+  quantity: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  importPrice: moneyField.default(0),
+  salePrice: moneyField.default(0),
   promotionPercent: z.coerce.number().min(0).max(100).default(0),
   isActive: z.coerce.boolean().default(true),
 });

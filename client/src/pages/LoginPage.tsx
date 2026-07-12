@@ -21,7 +21,7 @@ import BrandLogo from '../components/BrandLogo';
 export default function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -110,10 +110,6 @@ export default function LoginPage() {
               </Button>
             </Stack>
           </form>
-
-          <Alert severity="info" variant="outlined" sx={{ mt: 3, borderRadius: 2 }}>
-            Tài khoản mặc định: <b>admin</b> / <b>admin123</b>
-          </Alert>
         </CardContent>
       </Card>
     </Box>

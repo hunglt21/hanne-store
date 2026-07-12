@@ -2,15 +2,16 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../db.js';
 import { asyncHandler, HttpError } from '../utils/http.js';
+import { moneyField, MAX_MONEY } from '../utils/money.js';
 
 const router = Router();
 
 const itemSchema = z.object({
   productId: z.coerce.number().int().nullable().optional(),
   name: z.string().trim().min(1, 'Tên sản phẩm trống'),
-  quantity: z.coerce.number().int().min(1),
-  unitPrice: z.coerce.number().int().min(0),
-  importPrice: z.coerce.number().int().min(0).optional(),
+  quantity: z.coerce.number().int().min(1).max(1_000_000),
+  unitPrice: moneyField,
+  importPrice: moneyField.optional(),
 });
 
 const invoiceSchema = z.object({
@@ -18,8 +19,8 @@ const invoiceSchema = z.object({
   customerName: z.string().trim().min(1).default('Khách lẻ'),
   customerPhone: z.string().trim().nullable().optional(),
   items: z.array(itemSchema).min(1, 'Hóa đơn cần ít nhất 1 sản phẩm'),
-  discount: z.coerce.number().int().min(0).default(0),
-  amountPaid: z.coerce.number().int().min(0).optional(),
+  discount: moneyField.default(0),
+  amountPaid: moneyField.optional(),
   note: z.string().nullable().optional(),
   status: z.enum(['confirmed', 'draft', 'cancelled']).default('confirmed'),
 });
@@ -105,6 +106,11 @@ router.post(
       const costTotal = items.reduce((s, i) => s + i.importPrice * i.quantity, 0);
       const total = Math.max(0, subtotal - body.discount);
       const amountPaid = body.amountPaid ?? total;
+
+      // Guard against 32-bit integer overflow (Postgres `integer` column).
+      if ([subtotal, costTotal, total, amountPaid].some((v) => v > MAX_MONEY)) {
+        throw new HttpError(400, 'Tổng giá trị hóa đơn quá lớn (tối đa 2 tỷ đồng)');
+      }
 
       // Sequential code based on the latest invoice id (unique, monotonic).
       const last = await tx.invoice.findFirst({ orderBy: { id: 'desc' }, select: { id: true } });

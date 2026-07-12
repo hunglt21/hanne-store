@@ -22,6 +22,7 @@ import PhotoCameraOutlinedIcon from '@mui/icons-material/PhotoCameraOutlined';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { useSnackbar } from 'notistack';
 import MoneyField from '../components/MoneyField';
+import { MAX_MONEY } from '../lib/format';
 import { useCategories, useSaveProduct } from '../hooks/useProducts';
 import { api, apiError, imageUrl } from '../lib/api';
 import { compressImage } from '../lib/image';
@@ -114,6 +115,10 @@ export default function ProductFormDialog({
   const onSubmit = async () => {
     if (!form.name.trim()) {
       enqueueSnackbar('Vui lòng nhập tên sản phẩm', { variant: 'warning' });
+      return;
+    }
+    if (form.importPrice > MAX_MONEY || form.salePrice > MAX_MONEY) {
+      enqueueSnackbar('Giá tối đa 2 tỷ đồng', { variant: 'warning' });
       return;
     }
     try {

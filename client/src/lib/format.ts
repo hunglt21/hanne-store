@@ -1,3 +1,6 @@
+/** Max VND value the backend accepts (Postgres 32-bit integer safe cap). */
+export const MAX_MONEY = 2_000_000_000;
+
 const vnd = new Intl.NumberFormat('vi-VN');
 
 /** 1010500 -> "1.010.500 đ" */

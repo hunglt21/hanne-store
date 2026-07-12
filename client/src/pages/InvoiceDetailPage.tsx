@@ -85,8 +85,22 @@ export default function InvoiceDetailPage() {
   const profit = invoice.total - invoice.costTotal;
 
   const renderPng = async () => {
-    if (!billRef.current) return null;
-    return toPng(billRef.current, { pixelRatio: 2, backgroundColor: '#ffffff', cacheBust: true });
+    const node = billRef.current;
+    if (!node) return null;
+    // Capture the FULL rendered size (not the possibly-clipped viewport width),
+    // so no column gets cut off on narrow screens.
+    const width = node.scrollWidth;
+    const height = node.scrollHeight;
+    return toPng(node, {
+      pixelRatio: 2,
+      backgroundColor: '#ffffff',
+      cacheBust: true,
+      width,
+      height,
+      canvasWidth: width,
+      canvasHeight: height,
+      style: { margin: '0', maxWidth: 'none' },
+    });
   };
 
   const saveImage = async () => {
@@ -147,9 +161,15 @@ export default function InvoiceDetailPage() {
         <Chip label={status.label} color={status.color} size="small" />
       </Stack>
 
+      {/* Off-screen, fixed-width copy used ONLY for image capture — never clipped.
+          Marked no-print so it doesn't interfere with the printable bill below. */}
+      <Box className="no-print" sx={{ position: 'absolute', left: -9999, top: 0, pointerEvents: 'none' }} aria-hidden>
+        <BillPreview ref={billRef} data={billData} fixedWidth />
+      </Box>
+
       <Grid container spacing={3}>
         <Grid item xs={12} md={6} lg={5}>
-          <BillPreview ref={billRef} data={billData} />
+          <BillPreview data={billData} />
 
           <Stack direction="row" spacing={1} sx={{ mt: 2, maxWidth: 420, mx: 'auto' }} className="no-print">
             <Button variant="contained" fullWidth startIcon={<IosShareIcon />} onClick={shareImage} disabled={busy}>
