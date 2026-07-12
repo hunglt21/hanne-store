@@ -11,7 +11,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    branch: main
+    branch: dev
     healthCheckPath: /api/health
     # Free tier has no pre-deploy step, so schema push + seed run during build (env vars are available then).
     buildCommand: >-
