@@ -1,0 +1,100 @@
+// Hanne Store — data model
+// Money fields are stored as integers (VND has no decimal sub-unit).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// System user (for login). Single-user app, but modelled properly.
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("owner") // owner | staff
+  createdAt    DateTime @default(now())
+}
+
+/// A product / SKU held in the warehouse.
+model Product {
+  id               Int      @id @default(autoincrement())
+  name             String
+  sku              String?  @unique
+  description      String?
+  imageUrl         String?
+  category         String?
+  quantity         Int      @default(0) // stock on hand
+  importPrice      Int      @default(0) // giá nhập (cost)
+  salePrice        Int      @default(0) // giá bán
+  promotionPercent Float    @default(0) // 0–100, per-product discount
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items InvoiceItem[]
+
+  @@index([name])
+  @@index([category])
+}
+
+/// A customer of the shop.
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  address   String?
+  note      String?
+  isVip     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices Invoice[]
+
+  @@index([name])
+  @@index([phone])
+}
+
+/// A sales bill / invoice (PHIẾU TÍNH TIỀN).
+model Invoice {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique // e.g. HD0001
+  customerId    Int?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName  String   // snapshot at time of sale
+  customerPhone String?
+  subtotal      Int      @default(0) // sum of line totals before invoice discount
+  discount      Int      @default(0) // giảm giá (invoice-level)
+  total         Int      @default(0) // thanh toán = subtotal - discount
+  amountPaid    Int      @default(0) // khách trả
+  costTotal     Int      @default(0) // sum(importPrice * qty) — for profit reporting
+  note          String?
+  status        String   @default("confirmed") // confirmed | draft | cancelled
+  createdAt     DateTime @default(now())
+
+  items InvoiceItem[]
+
+  @@index([createdAt])
+  @@index([customerId])
+}
+
+/// A single line on an invoice. Snapshots price/cost so history is stable.
+model InvoiceItem {
+  id          Int      @id @default(autoincrement())
+  invoiceId   Int
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId   Int?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name        String   // snapshot of product name
+  quantity    Int      @default(1)
+  unitPrice   Int      @default(0) // actual sold price per unit (after promotion)
+  importPrice Int      @default(0) // cost snapshot
+  lineTotal   Int      @default(0) // unitPrice * quantity
+
+  @@index([invoiceId])
+  @@index([productId])
+}
