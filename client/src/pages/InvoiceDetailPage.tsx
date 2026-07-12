@@ -84,23 +84,43 @@ export default function InvoiceDetailPage() {
 
   const profit = invoice.total - invoice.costTotal;
 
+  const CAPTURE_WIDTH = 420; // fixed bill width used for the exported image
+
   const renderPng = async () => {
     const node = billRef.current;
     if (!node) return null;
-    // Capture the FULL rendered size (not the possibly-clipped viewport width),
-    // so no column gets cut off on narrow screens.
-    const width = node.scrollWidth;
-    const height = node.scrollHeight;
-    return toPng(node, {
-      pixelRatio: 2,
-      backgroundColor: '#ffffff',
-      cacheBust: true,
-      width,
-      height,
-      canvasWidth: width,
-      canvasHeight: height,
-      style: { margin: '0', maxWidth: 'none' },
-    });
+
+    // Wait for web fonts so text metrics are final (otherwise columns can overflow → clip).
+    try {
+      await (document as Document & { fonts?: FontFaceSet }).fonts?.ready;
+    } catch {
+      /* older browsers: ignore */
+    }
+
+    // Temporarily lock the bill to a fixed width so nothing is clipped, capture, then restore.
+    const prev = { width: node.style.width, maxWidth: node.style.maxWidth, margin: node.style.margin };
+    node.style.width = `${CAPTURE_WIDTH}px`;
+    node.style.maxWidth = 'none';
+    node.style.margin = '0';
+    // Force reflow so the browser applies the new width before we measure.
+    void node.offsetWidth;
+
+    try {
+      const height = node.scrollHeight;
+      return await toPng(node, {
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        cacheBust: true,
+        width: CAPTURE_WIDTH,
+        height,
+        canvasWidth: CAPTURE_WIDTH,
+        canvasHeight: height,
+      });
+    } finally {
+      node.style.width = prev.width;
+      node.style.maxWidth = prev.maxWidth;
+      node.style.margin = prev.margin;
+    }
   };
 
   const saveImage = async () => {
@@ -161,15 +181,9 @@ export default function InvoiceDetailPage() {
         <Chip label={status.label} color={status.color} size="small" />
       </Stack>
 
-      {/* Off-screen, fixed-width copy used ONLY for image capture — never clipped.
-          Marked no-print so it doesn't interfere with the printable bill below. */}
-      <Box className="no-print" sx={{ position: 'absolute', left: -9999, top: 0, pointerEvents: 'none' }} aria-hidden>
-        <BillPreview ref={billRef} data={billData} fixedWidth />
-      </Box>
-
       <Grid container spacing={3}>
         <Grid item xs={12} md={6} lg={5}>
-          <BillPreview data={billData} />
+          <BillPreview ref={billRef} data={billData} />
 
           <Stack direction="row" spacing={1} sx={{ mt: 2, maxWidth: 420, mx: 'auto' }} className="no-print">
             <Button variant="contained" fullWidth startIcon={<IosShareIcon />} onClick={shareImage} disabled={busy}>

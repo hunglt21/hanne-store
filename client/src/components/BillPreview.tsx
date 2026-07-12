@@ -29,8 +29,7 @@ const SHOP_TAGLINE = 'Mỹ phẩm chính hãng';
  * A printable / screenshot-friendly sales bill (PHIẾU TÍNH TIỀN),
  * modelled on the shop's paper receipts. Narrow width suits phone screenshots.
  */
-const BillPreview = forwardRef<HTMLDivElement, { data: BillData; fixedWidth?: boolean }>(
-  ({ data, fixedWidth = false }, ref) => {
+const BillPreview = forwardRef<HTMLDivElement, { data: BillData }>(({ data }, ref) => {
   const totalQty = data.items.reduce((s, i) => s + i.quantity, 0);
   const change = data.amountPaid - data.total;
 
@@ -39,10 +38,8 @@ const BillPreview = forwardRef<HTMLDivElement, { data: BillData; fixedWidth?: bo
       ref={ref}
       className="print-area"
       sx={{
-        // On screen: fluid up to 420px. When capturing (fixedWidth), lock to 420px
-        // so no column is clipped on narrow viewports.
-        width: fixedWidth ? 420 : '100%',
-        maxWidth: fixedWidth ? 'none' : 420,
+        width: '100%',
+        maxWidth: 420,
         mx: 'auto',
         bgcolor: '#fff',
         color: '#1f2a24',
@@ -162,8 +159,7 @@ const BillPreview = forwardRef<HTMLDivElement, { data: BillData; fixedWidth?: bo
       </Box>
     </Box>
   );
-  }
-);
+});
 
 BillPreview.displayName = 'BillPreview';
 export default BillPreview;
