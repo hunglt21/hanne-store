@@ -4,9 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url)); // server/src
 export const SERVER_ROOT = path.resolve(here, '..'); // server/
-export const UPLOAD_DIR = path.join(SERVER_ROOT, 'uploads');
+export const REPO_ROOT = path.resolve(SERVER_ROOT, '..'); // repo root
 
-// Ensure the uploads folder exists on boot.
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+/** Built client SPA (produced by `npm --prefix client run build`). Served in production. */
+export const CLIENT_DIST = path.join(REPO_ROOT, 'client', 'dist');
+export const hasClientBuild = fs.existsSync(path.join(CLIENT_DIST, 'index.html'));

@@ -45,7 +45,15 @@ async function main() {
     update: { passwordHash, name: ADMIN_NAME },
     create: { username: ADMIN_USERNAME, passwordHash, name: ADMIN_NAME, role: 'owner' },
   });
-  console.log(`  ✔ Admin user ready: ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
+  console.log(`  ✔ Admin user ready: ${ADMIN_USERNAME}`);
+
+  // Sample catalogue/customers/invoices only when explicitly enabled (keep production clean).
+  const seedSample = process.env.SEED_SAMPLE === 'true';
+  if (!seedSample) {
+    console.log('  … SEED_SAMPLE != "true" → bỏ qua dữ liệu mẫu (chỉ đảm bảo tài khoản admin).');
+    console.log('✅ Seed complete.');
+    return;
+  }
 
   // 2) Products — only seed if empty (don't clobber real data)
   const productCount = await prisma.product.count();

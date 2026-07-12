@@ -1,0 +1,42 @@
+# Render Blueprint — deploys Hanne Store (React SPA + Express API) as ONE free web service.
+#
+# Prerequisite: a free Neon Postgres database (https://neon.tech).
+# In Render: "Blueprints" → "New Blueprint Instance" → pick this repo, then set:
+#   - DATABASE_URL   : the Neon connection string (must include ?sslmode=require)
+#   - ADMIN_PASSWORD : your admin password
+# JWT_SECRET is generated automatically.
+services:
+  - type: web
+    name: hanne-store
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    healthCheckPath: /api/health
+    # Free tier has no pre-deploy step, so schema push + seed run during build (env vars are available then).
+    buildCommand: >-
+      npm run install:all &&
+      npm --prefix server run prisma:generate &&
+      npm --prefix server run db:push &&
+      npm --prefix server run db:seed &&
+      npm --prefix client run build
+    startCommand: npm --prefix server run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false" # ensure devDependencies (vite, tsx, prisma) install on Render
+      - key: DATABASE_URL
+        sync: false # paste your Neon connection string
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 30d
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false # set your own password
+      - key: ADMIN_NAME
+        value: "Chủ cửa hàng"
+      - key: SEED_SAMPLE
+        value: "false" # set to "true" if you want the demo catalogue seeded

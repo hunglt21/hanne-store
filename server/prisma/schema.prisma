@@ -6,8 +6,16 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+/// Product images stored directly in the DB (so the app needs no disk / object storage).
+model Image {
+  id        String   @id @default(cuid())
+  data      Bytes
+  mimeType  String   @default("image/jpeg")
+  createdAt DateTime @default(now())
 }
 
 /// System user (for login). Single-user app, but modelled properly.

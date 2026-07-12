@@ -24,6 +24,7 @@ import { useSnackbar } from 'notistack';
 import MoneyField from '../components/MoneyField';
 import { useCategories, useSaveProduct } from '../hooks/useProducts';
 import { api, apiError, imageUrl } from '../lib/api';
+import { compressImage } from '../lib/image';
 import type { Product } from '../types';
 
 interface FormState {
@@ -95,10 +96,11 @@ export default function ProductFormDialog({
   const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('image', file);
     setUploading(true);
     try {
+      const compressed = await compressImage(file);
+      const fd = new FormData();
+      fd.append('image', compressed, 'photo.jpg');
       const r = await api.post('/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       set('imageUrl', r.data.url);
     } catch (err) {
